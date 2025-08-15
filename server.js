@@ -12,6 +12,7 @@ const { errorHandler, notFound } = require('./src/middleware/error');
 const rateLimiters = require('./src/middleware/rateLimiters');
 
 const authRoutes = require('./src/routes/auth.routes');
+const usersRoutes = require('./src/routes/users.routes');
 const mapRoutes = require('./src/routes/map.routes');
 const alertsRoutes = require('./src/routes/alerts.routes');
 const aiRoutes = require('./src/routes/ai.routes');
@@ -39,6 +40,7 @@ app.use('/api/v1/actions', rateLimiters.actionsLimiter);
 
 // Routes (v1)
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/map-data', mapRoutes);
 app.use('/api/v1/alerts', alertsRoutes);
 app.use('/api/v1', aiRoutes); // exposes /api/v1/ai-insights & /api/v1/ai-predictions
