@@ -249,6 +249,7 @@ Frontend ← WebSocket ← Cache & Broadcast
 
 ### **Frontend Team** should use:
 - ✅ `/api/v1/auth/*` - Authentication
+- ✅ `/api/v1/users/*` - User management (Admin only)
 - ✅ `/api/v1/map-data` - Map visualization
 - ✅ `/api/v1/alerts/*` - Alert management
 - ✅ `/api/v1/ai-insights` - AI dashboard widget

@@ -3,26 +3,96 @@
 ## 📋 Overview
 This document specifies what data the frontend sends to the backend, through which endpoints, and in what format. This covers both the web dashboard and camera functionality integrated in the frontend.
 
+**🔥 UPDATED**: Enhanced with new admin-only endpoints and role-based permissions (August 15, 2025)
+
 ---
 
-## 🔐 **1. USER AUTHENTICATION**
+## 🔐 **1. USER AUTHENTICATION & MANAGEMENT**
 
-### Login
+### 1.1 Login
 **Purpose**: Authenticate users and get access token  
 **Endpoint**: `POST /api/v1/auth/login`  
-**When**: User submits login form
+**When**: User submits login form  
+**Role Access**: All users
 
 **Data Format**:
 ```json
 {
   "email": "admin@crowdshield.ai",
-  "password": "password123"
+  "password": "admin123!"
+}
+```
+
+**Response**:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": "689f34ab8bda67c89b8dfe7a",
+    "name": "System Administrator",
+    "role": "admin",
+    "permissions": ["USER_MANAGEMENT", "AI_INSIGHTS", "SYSTEM_CONFIG", ...]
+  }
 }
 ```
 
 **Fields**:
 - `email`: Valid email address (required)
 - `password`: User password (required, min 6 characters)
+
+### 1.2 🆕 Create User (ADMIN ONLY)
+**Purpose**: Admin creates new user accounts  
+**Endpoint**: `POST /api/v1/users`  
+**When**: Admin adds new staff/admin users  
+**Role Access**: Admin only
+
+**Data Format**:
+```json
+{
+  "name": "New Staff Member",
+  "email": "staff@crowdshield.ai",
+  "password": "tempPassword123!",
+  "role": "staff"
+}
+```
+
+**Fields**:
+- `name`: Full name (required, 2-50 characters)
+- `email`: Unique email address (required)
+- `password`: Temporary password (required, min 8 characters)
+- `role`: Either "admin" or "staff" (required)
+
+### 1.3 🆕 List Users (ADMIN ONLY)
+**Purpose**: Admin views all system users  
+**Endpoint**: `GET /api/v1/users`  
+**When**: User management panel loads  
+**Role Access**: Admin only
+
+**Query Parameters**: None
+
+### 1.4 🆕 Update User (ADMIN ONLY)
+**Purpose**: Admin modifies user details  
+**Endpoint**: `PUT /api/v1/users/:id`  
+**When**: Admin edits user information  
+**Role Access**: Admin only
+
+**Data Format**:
+```json
+{
+  "name": "Updated Name",
+  "email": "newemail@crowdshield.ai",
+  "role": "admin",
+  "password": "newPassword123!" // Optional
+}
+```
+
+### 1.5 🆕 Delete User (ADMIN ONLY)
+**Purpose**: Admin removes user accounts  
+**Endpoint**: `DELETE /api/v1/users/:id`  
+**When**: Admin deactivates user accounts  
+**Role Access**: Admin only
+
+**Data Format**: No body, user ID in URL
 
 ---
 
@@ -31,7 +101,8 @@ This document specifies what data the frontend sends to the backend, through whi
 ### Get Location Points and Density
 **Purpose**: Load map visualization data  
 **Endpoint**: `GET /api/v1/map-data`  
-**When**: Map loads, user changes view, time filter changes
+**When**: Map loads, user changes view, time filter changes  
+**Role Access**: All authenticated users
 
 **Query Parameters**:
 - `eventId`: Event identifier (optional)
@@ -47,7 +118,8 @@ This document specifies what data the frontend sends to the backend, through whi
 ### Get Alerts List
 **Purpose**: Display current alerts in dashboard  
 **Endpoint**: `GET /api/v1/alerts`  
-**When**: Alerts panel loads, user filters alerts
+**When**: Alerts panel loads, user filters alerts  
+**Role Access**: Admin and Staff
 
 **Query Parameters**:
 - `eventId`: Event identifier (required)
@@ -62,20 +134,38 @@ This document specifies what data the frontend sends to the backend, through whi
 
 ---
 
-## 🤖 **4. AI INSIGHTS & PREDICTIONS**
+## 🤖 **4. AI INSIGHTS & PREDICTIONS** 🔒 **(ADMIN ONLY)**
 
 ### Get AI Risk Assessment
 **Purpose**: Display current risk level and recommendations  
 **Endpoint**: `GET /api/v1/ai-insights`  
-**When**: AI widget loads, periodic refresh (30 seconds)
+**When**: AI widget loads, periodic refresh (30 seconds)  
+**Role Access**: 🔒 **Admin only** - Staff cannot access sensitive AI data
 
 **Query Parameters**:
 - `eventId`: Event identifier (required)
 
+**Response Example**:
+```json
+{
+  "riskScore": 0.85,
+  "recommendation": "Increase security presence in Zone A",
+  "confidence": 0.92,
+  "factors": {
+    "crowdDensity": "high",
+    "timeOfDay": "peak",
+    "weatherConditions": "favorable"
+  },
+  "mlStatus": "ok",
+  "generatedAt": "2025-08-15T13:27:35.313Z"
+}
+```
+
 ### Get AI Zone Predictions
 **Purpose**: Show predicted risk for map zones  
 **Endpoint**: `GET /api/v1/ai-predictions`  
-**When**: Map loads, user changes prediction horizon
+**When**: Map loads, user changes prediction horizon  
+**Role Access**: 🔒 **Admin only** - Advanced analytics restricted
 
 **Query Parameters**:
 - `eventId`: Event identifier (required)
@@ -211,14 +301,71 @@ This document specifies what data the frontend sends to the backend, through whi
 
 ---
 
-## 🏥 **8. SYSTEM HEALTH**
+## 🏥 **8. SYSTEM HEALTH & MONITORING**
 
-### Check System Status
-**Purpose**: Monitor system health  
+### 8.1 Check System Status (PUBLIC)
+**Purpose**: Monitor basic system health  
 **Endpoint**: `GET /api/v1/system-health`  
-**When**: Admin panel loads, periodic health checks
+**When**: Any user checks system availability  
+**Role Access**: Public (no authentication required)
 
 **No parameters required**
+
+**Response Example**:
+```json
+{
+  "api": "ok",
+  "db": "ok", 
+  "ml": "degraded",
+  "socket": "ok",
+  "dependencies": {
+    "twilio": "ok",
+    "storage": "ok"
+  },
+  "time": "2025-08-15T13:27:18.798Z"
+}
+```
+
+### 8.2 🆕 Get Detailed System Metrics (ADMIN ONLY)
+**Purpose**: View comprehensive system analytics  
+**Endpoint**: `GET /api/v1/system-health/metrics`  
+**When**: Admin dashboard loads, system monitoring  
+**Role Access**: 🔒 **Admin only** - Sensitive system data
+
+**Response Example**:
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-08-15T13:27:35.313Z",
+  "services": {
+    "api": "ok",
+    "database": "ok",
+    "ml": "degraded",
+    "socket": "ok"
+  },
+  "performance": {
+    "mlResponseTime": 150,
+    "uptime": 3600,
+    "memoryUsage": {
+      "rss": "45 MB",
+      "heapTotal": "25 MB", 
+      "heapUsed": "18 MB"
+    }
+  },
+  "users": {
+    "total": 5,
+    "active": 2,
+    "admins": 1,
+    "staff": 4
+  },
+  "system": {
+    "totalAlerts": 12,
+    "activeEvents": 1,
+    "nodeVersion": "v20.11.0",
+    "platform": "win32"
+  }
+}
+```
 
 ---
 
@@ -673,8 +820,181 @@ const handleApiError = (error: any, context: string) => {
     return;
   }
   
+---
+
+## 🔐 **12. ENHANCED ROLE-BASED ACCESS CONTROL**
+
+### **Frontend Implementation Guidelines**
+
+#### **12.1 Role Detection After Login**
+```typescript
+// After successful login
+const handleLoginSuccess = (response: AuthResponse) => {
+  const { token, user } = response;
+  
+  // Store authentication data
+  localStorage.setItem('authToken', token);
+  localStorage.setItem('userRole', user.role);
+  localStorage.setItem('userPermissions', JSON.stringify(user.permissions));
+  
+  // Redirect based on role
+  if (user.role === 'admin') {
+    navigate('/admin-dashboard');
+  } else if (user.role === 'staff') {
+    navigate('/staff-dashboard');
+  }
+};
+```
+
+#### **12.2 Permission-Based UI Rendering**
+```typescript
+// Component permission checking
+const hasPermission = (permission: string): boolean => {
+  const userRole = localStorage.getItem('userRole');
+  const userPermissions = JSON.parse(localStorage.getItem('userPermissions') || '[]');
+  
+  // Admin has all permissions
+  if (userRole === 'admin') return true;
+  
+  // Check specific permission
+  return userPermissions.includes(permission);
+};
+
+// Conditional rendering examples
+const AdminOnlyButton = () => {
+  if (!hasPermission('USER_MANAGEMENT')) return null;
+  
+  return <button onClick={openUserManagement}>Manage Users</button>;
+};
+
+const AIInsightsPanel = () => {
+  if (!hasPermission('AI_INSIGHTS')) {
+    return <div>AI insights require administrator access</div>;
+  }
+  
+  return <AIInsightsComponent />;
+};
+```
+
+#### **12.3 API Request Headers**
+```typescript
+// Always include JWT token in requests
+const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('authToken');
+  
+  const response = await fetch(`/api/v1${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers
+    }
+  });
+  
+  // Handle permission errors
+  if (response.status === 403) {
+    const errorData = await response.json();
+    if (errorData.error?.code === 'ADMIN_ONLY') {
+      showErrorMessage('This feature requires administrator access');
+      return;
+    }
+    if (errorData.error?.code === 'INSUFFICIENT_PERMISSIONS') {
+      showErrorMessage(`Access denied: ${errorData.error.message}`);
+      return;
+    }
+  }
+  
+  return response;
+};
+```
+
+### **12.4 Error Handling for Role-Based Access**
+```typescript
+// Enhanced error handling for permissions
+const handleApiError = (error: any, context: string) => {
+  if (error.status === 401) {
+    logout();
+    showErrorMessage('Session expired. Please log in again.');
+    return;
+  }
+  
   if (error.status === 403) {
-    showErrorMessage('You do not have permission to perform this action.');
+    const errorData = error.response?.data;
+    
+    switch (errorData?.error?.code) {
+      case 'ADMIN_ONLY':
+        showErrorMessage('Administrator access required for this feature');
+        break;
+      case 'INSUFFICIENT_PERMISSIONS':
+        showErrorMessage(`Access denied: ${errorData.error.message}`);
+        break;
+      case 'MISSING_PERMISSION':
+        showErrorMessage(`Permission required: ${errorData.error.requiredPermission}`);
+        break;
+      default:
+        showErrorMessage('You do not have permission to perform this action');
+    }
+    return;
+  }
+  
+  // Handle other errors...
+};
+```
+
+---
+
+## 🎯 **13. UPDATED DATA FLOW SUMMARY**
+
+### **👑 Admin Dashboard Functions**:
+1. **Login** → Get JWT token with admin role
+2. **User Management** → Create, edit, delete user accounts
+3. **AI Analytics** → Access sensitive AI insights and predictions  
+4. **System Monitoring** → View detailed system metrics and logs
+5. **Load Map** → Get location points and density (full access)
+6. **Alert Management** → View, resolve, configure alert rules
+7. **Advanced Reports** → Create, view, and export all reports
+8. **Camera Management** → Configure CCTV systems and object detection
+9. **Data Export** → Export analytics and historical data
+
+### **👥 Staff Dashboard Functions**:
+1. **Login** → Get JWT token with staff role
+2. **Operational Map** → View location points and basic density
+3. **Alert Monitoring** → View and acknowledge alerts (read-only rules)
+4. **Submit Actions** → Log operational responses and activities
+5. **Basic Reports** → Create and view incident reports (limited scope)
+6. **Location Pings** → Send GPS coordinates and status updates
+7. **Camera Feeds** → View camera data and submit object detections
+
+### **🌐 Public Functions** (No Authentication):
+1. **Basic Health Check** → Monitor system availability
+2. **Public Reports** → Submit incident reports from public
+3. **Emergency Info** → Access emergency contacts and procedures
+
+### **🔒 Security Boundaries**:
+- **JWT Token Required**: All authenticated endpoints
+- **Admin Role Required**: User management, AI insights, system metrics, data export
+- **Staff/Admin Role**: Alert management, operational functions, camera feeds
+- **Public Access**: Health check, public reports, emergency info
+
+### **📊 Permission Matrix Quick Reference**:
+| Endpoint Category | Admin | Staff | Public |
+|-------------------|-------|-------|--------|
+| User Management | ✅ | ❌ | ❌ |
+| AI Insights | ✅ | ❌ | ❌ |
+| System Metrics | ✅ | ❌ | ❌ |
+| Alert Management | ✅ | ✅ | ❌ |
+| Map Data | ✅ | ✅ | ❌ |
+| Reports | ✅ | ✅ | ✅ |
+| Health Check | ✅ | ✅ | ✅ |
+
+**🚀 Frontend Team Action Items**:
+1. Build **two distinct dashboard experiences** for admin vs staff
+2. Implement **role-based component rendering** 
+3. Add **proper permission error handling**
+4. Include **JWT tokens in all authenticated requests**
+5. Handle **403 permission errors gracefully**
+
+This enhanced system provides **enterprise-grade security** with clear role separation! 🔐
     return;
   }
   

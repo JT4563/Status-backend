@@ -9,9 +9,39 @@ const Zone = require('../models/Zone');
 (async () => {
   try {
     await connectDb();
-    await User.deleteMany({ email: 'admin@crowdshield.ai' });
-    const passwordHash = await bcrypt.hash('password123', 10);
-    const user = await User.create({ name: 'Admin', email: 'admin@crowdshield.ai', passwordHash, role: 'admin' });
+    
+    // Clear existing users
+    await User.deleteMany({ email: { $in: ['admin@crowdshield.ai', 'staff@crowdshield.ai'] } });
+    
+    // Create admin user with full permissions
+    const adminPasswordHash = await bcrypt.hash('admin123!', 10);
+    const adminUser = await User.create({ 
+      name: 'System Administrator', 
+      email: 'admin@crowdshield.ai', 
+      passwordHash: adminPasswordHash, 
+      role: 'admin',
+      permissions: [
+        'USER_MANAGEMENT', 'SYSTEM_CONFIG', 'AI_INSIGHTS', 
+        'ADVANCED_ANALYTICS', 'CAMERA_MANAGEMENT', 'DATA_EXPORT',
+        'VIEW_ALERTS', 'ACKNOWLEDGE_ALERTS', 'SUBMIT_ACTIONS', 
+        'LOCATION_PINGS', 'BASIC_REPORTS', 'VIEW_CAMERA_FEEDS'
+      ],
+      isActive: true
+    });
+
+    // Create staff user with limited permissions
+    const staffPasswordHash = await bcrypt.hash('staff123!', 10);
+    const staffUser = await User.create({ 
+      name: 'Field Operator', 
+      email: 'staff@crowdshield.ai', 
+      passwordHash: staffPasswordHash, 
+      role: 'staff',
+      permissions: [
+        'VIEW_ALERTS', 'ACKNOWLEDGE_ALERTS', 'SUBMIT_ACTIONS', 
+        'LOCATION_PINGS', 'BASIC_REPORTS', 'VIEW_CAMERA_FEEDS'
+      ],
+      isActive: true
+    });
 
     // Minimal event + square bounds
     const event = await Event.create({
@@ -20,7 +50,7 @@ const Zone = require('../models/Zone');
       startAt: new Date(Date.now() - 3600000),
       endAt: new Date(Date.now() + 6*3600000),
       bounds: { type: 'Polygon', coordinates: [[[77.58,12.96],[77.64,12.96],[77.64,13.02],[77.58,13.02],[77.58,12.96]]] },
-      createdBy: user._id
+      createdBy: adminUser._id
     });
 
     const zone = await Zone.create({
@@ -29,9 +59,27 @@ const Zone = require('../models/Zone');
       polygon: { type: 'Polygon', coordinates: [[[77.59,12.97],[77.61,12.97],[77.61,12.99],[77.59,12.99],[77.59,12.97]]] }
     });
 
-    console.log('Seed complete.');
-    console.log('Login → email: admin@crowdshield.ai | password: password123');
-    console.log('EventId:', String(event._id), 'ZoneId:', String(zone._id));
+    console.log('🚀 Seed complete - Enhanced Permission System!');
+    console.log('');
+    console.log('👑 ADMIN LOGIN:');
+    console.log('   Email: admin@crowdshield.ai');
+    console.log('   Password: admin123!');
+    console.log('   Role: admin');
+    console.log('   Permissions: ALL (User Management, AI Insights, System Config, etc.)');
+    console.log('');
+    console.log('👥 STAFF LOGIN:');
+    console.log('   Email: staff@crowdshield.ai');
+    console.log('   Password: staff123!');
+    console.log('   Role: staff');
+    console.log('   Permissions: LIMITED (View Alerts, Submit Actions, Basic Reports)');
+    console.log('');
+    console.log('🆔 IDs:');
+    console.log('   Admin ID:', String(adminUser._id));
+    console.log('   Staff ID:', String(staffUser._id));
+    console.log('   EventId:', String(event._id));
+    console.log('   ZoneId:', String(zone._id));
+    console.log('');
+    console.log('🔐 PERMISSION SYSTEM ACTIVE - Admin and Staff now have different access levels!');
     process.exit(0);
   } catch (e) {
     console.error(e);
