@@ -4,14 +4,12 @@ async function createPing(req, res, next) {
   try {
     const { eventId, lat, lng, speed, heading, accuracy, ts } = req.body || {};
     if (!eventId || typeof lat !== "number" || typeof lng !== "number") {
-      return res
-        .status(400)
-        .json({
-          error: {
-            code: "INVALID_PAYLOAD",
-            message: "eventId, lat, lng required",
-          },
-        });
+      return res.status(400).json({
+        error: {
+          code: "INVALID_PAYLOAD",
+          message: "eventId, lat, lng required",
+        },
+      });
     }
     const doc = await LocationPing.create({
       eventId,
