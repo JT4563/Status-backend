@@ -7,24 +7,20 @@ async function login(req, res, next) {
     const { email, password } = req.body || {};
     const user = await User.findOne({ email });
     if (!user)
-      return res
-        .status(401)
-        .json({
-          error: {
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid email or password",
-          },
-        });
+      return res.status(401).json({
+        error: {
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid email or password",
+        },
+      });
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok)
-      return res
-        .status(401)
-        .json({
-          error: {
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid email or password",
-          },
-        });
+      return res.status(401).json({
+        error: {
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid email or password",
+        },
+      });
     const token = signAccessToken(user);
     return res.json({
       token,

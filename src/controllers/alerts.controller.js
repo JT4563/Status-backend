@@ -4,11 +4,9 @@ async function listAlerts(req, res, next) {
   try {
     const { eventId, status } = req.query;
     if (!eventId)
-      return res
-        .status(400)
-        .json({
-          error: { code: "MISSING_EVENT", message: "eventId required" },
-        });
+      return res.status(400).json({
+        error: { code: "MISSING_EVENT", message: "eventId required" },
+      });
     const q = { eventId };
     if (status) q.status = status;
     const items = await Alert.find(q).sort({ createdAt: -1 }).lean();
